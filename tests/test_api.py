@@ -118,3 +118,65 @@ def test_delete_exercise(client):
 
     missing_response = client.get("/exercises/1")
     assert missing_response.status_code == 404
+
+def test_create_workout(client):
+    response = client.post(
+        "/workouts",
+        json={
+            "date": "2026-10-21",
+            "duration_minutes": 45,
+            "notes": "Leg day",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json["duration_minutes"] == 45
+    assert response.json["notes"] == "Leg day"
+
+
+def test_add_exercise_to_workout(client):
+    response = client.post(
+        "/workouts/1/exercises",
+        json={
+            "exercise_id": 1,
+            "reps": 12,
+            "sets": 3,
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_delete_workout(client):
+    response = client.delete("/workouts/1")
+
+    assert response.status_code == 204
+
+    missing_response = client.get("/workouts/1")
+    assert missing_response.status_code == 404
+
+def test_add_new_exercise_to_workout(client):
+    exercise = Exercise(
+        name="Plank",
+        category="Core",
+        equipment_needed=False,
+    )
+
+    with app.app_context():
+        db.session.add(exercise)
+        db.session.commit()
+        exercise_id = exercise.id
+
+    response = client.post(
+        "/workouts/1/exercises",
+        json={
+            "exercise_id": exercise_id,
+            "reps": 10,
+            "sets": 3,
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json["exercise_id"] == exercise_id
+    assert response.json["reps"] == 10
+    assert response.json["sets"] == 3
